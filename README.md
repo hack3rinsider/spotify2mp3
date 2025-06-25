@@ -34,6 +34,49 @@ Logs and progress streamed live in the GUI status panel.
 
 Helps track which song is currently processed and download progress.
 
+===============================
+REQUIREMENTS
+1. Spotify Developer Account
+You need a Spotify Developer Account to get your CLIENT_ID and CLIENT_SECRET.
+
+Sign up and create an app here:
+https://developer.spotify.com/dashboard/
+
+After creating your app, you'll find CLIENT_ID and CLIENT_SECRET on the app’s dashboard.
+
+2. yt-dlp.exe
+yt-dlp.exe is a command-line program to download videos and audio from YouTube.
+
+Download the latest Windows executable from:
+https://github.com/yt-dlp/yt-dlp/releases/latest
+
+Save yt-dlp.exe somewhere on your computer, e.g., C:\Tools\yt-dlp.exe.
+
+3. ffmpeg
+ffmpeg is required for audio and video processing during downloads.
+
+Download the Windows build here:
+https://ffmpeg.org/download.html#build-windows
+
+Extract the ffmpeg folder and add its bin directory (which contains ffmpeg.exe) to your system PATH environment variable, so it can be called from anywhere.
+
+How to Get the Full Path of yt-dlp.exe
+Locate where you saved yt-dlp.exe on your PC.
+
+Right-click the file → Properties → copy the Location path.
+
+Add \yt-dlp.exe at the end.
+
+Example:
+If location is C:\Tools, full path is
+
+makefile
+Copy
+Edit
+C:\Tools\yt-dlp.exe
+Use this full path when the GUI asks for the yt-dlp executable location.
+===============================
+
 How to Use
 
 You need to first install yt-dl and ffmpeg and note down their paths

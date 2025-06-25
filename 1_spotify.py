@@ -1,44 +1,60 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import re
 import os
+import re
+import json
+import sys
 
 CREDENTIALS_FILE = "credentials.txt"
-CLIENT_ID = CLIENT_SECRET = PLAYLIST_URL = None
 
-# Load credentials if they exist
-if os.path.exists(CREDENTIALS_FILE):
-    with open(CREDENTIALS_FILE, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-        try:
-            CLIENT_ID = lines[0].split("=", 1)[1].strip()
-            CLIENT_SECRET = lines[1].split("=", 1)[1].strip()
-            PLAYLIST_URL = lines[2].split("=", 1)[1].strip()
-            print("🔐 Loaded credentials from credentials.txt")
-        except Exception:
-            print("⚠️ Malformed credentials.txt — will prompt for fresh credentials.")
+# Load credentials from JSON file
+def load_credentials():
+    if not os.path.exists(CREDENTIALS_FILE):
+        print("❌ credentials.txt not found.")
+        return None
+    try:
+        with open(CREDENTIALS_FILE, "r", encoding="utf-8") as f:
+            creds = json.load(f)
+            required = ["CLIENT_ID", "CLIENT_SECRET", "PLAYLIST_URL"]
+            if not all(k in creds for k in required):
+                raise ValueError("Missing required fields.")
+            return creds
+    except Exception as e:
+        print(f"⚠️ Failed to load credentials: {e}")
+        return None
 
-# If any credential is missing, prompt user
-if not CLIENT_ID or not CLIENT_SECRET or not PLAYLIST_URL:
-    CLIENT_ID = input("Enter your Spotify CLIENT_ID: ").strip()
-    CLIENT_SECRET = input("Enter your Spotify CLIENT_SECRET: ").strip()
-    PLAYLIST_URL = input("Enter your Spotify playlist URL: ").strip()
+# Prompt user for missing credentials
+def prompt_for_credentials():
+    print("🔑 Enter Spotify credentials:")
+    client_id = input("CLIENT_ID: ").strip()
+    client_secret = input("CLIENT_SECRET: ").strip()
+    playlist_url = input("Playlist URL: ").strip()
+    creds = {
+        "CLIENT_ID": client_id,
+        "CLIENT_SECRET": client_secret,
+        "PLAYLIST_URL": playlist_url
+    }
+    with open(CREDENTIALS_FILE, "w", encoding="utf-8") as f:
+        json.dump(creds, f, indent=2)
+    print("✅ Credentials saved to credentials.txt")
+    return creds
 
-    # Save to credentials.txt
-    with open(CREDENTIALS_FILE, "w", encoding="utf-8") as cred_file:
-        cred_file.write(f"CLIENT_ID = {CLIENT_ID}\n")
-        cred_file.write(f"CLIENT_SECRET = {CLIENT_SECRET}\n")
-        cred_file.write(f"PLAYLIST_URL = {PLAYLIST_URL}\n")
-    print("✅ Saved credentials to credentials.txt")
+# Load or prompt
+credentials = load_credentials() or prompt_for_credentials()
+
+CLIENT_ID = credentials["CLIENT_ID"]
+CLIENT_SECRET = credentials["CLIENT_SECRET"]
+PLAYLIST_URL = credentials["PLAYLIST_URL"]
 
 # Extract playlist ID
-match = re.search(r"playlist\/([a-zA-Z0-9]+)", PLAYLIST_URL)
+match = re.search(r"playlist/([a-zA-Z0-9]+)", PLAYLIST_URL)
 if not match:
     print("❌ Invalid playlist URL.")
-    exit(1)
+    sys.exit(1)
+
 PLAYLIST_ID = match.group(1)
 
-# Set up Spotify client
+# Authenticate with Spotify
 REDIRECT_URI = 'http://localhost:8888/callback'
 SCOPE = 'playlist-read-private'
 
@@ -49,11 +65,10 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     scope=SCOPE
 ))
 
-# Fetch all songs from playlist
+# Fetch tracks
 def get_playlist_tracks(playlist_id):
     results = sp.playlist_items(playlist_id)
     tracks = results['items']
-
     while results['next']:
         results = sp.next(results)
         tracks.extend(results['items'])
@@ -67,12 +82,17 @@ def get_playlist_tracks(playlist_id):
             song_list.append(f"{name} - {artists}")
     return song_list
 
-# Fetch and save
+# Run and save
 songs = get_playlist_tracks(PLAYLIST_ID)
+
+if not songs:
+    print("⚠️ No songs found in the playlist.")
+    sys.exit(1)
+
 for song in songs:
     print(song)
 
-with open("songs.txt", "w", encoding="utf-8") as file:
-    file.write("\n".join(songs))
+with open("songs.txt", "w", encoding="utf-8") as f:
+    f.write("\n".join(songs))
 
-print("🎶 Saved to songs.txt")
+print("Saved to songs.txt")

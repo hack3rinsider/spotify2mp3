@@ -1,4 +1,14 @@
 import subprocess
+import sys
+import os
+
+# Ensure terminal handles UTF-8 output
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except AttributeError:
+    # For Python versions < 3.7 or when reconfigure isn't available
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 print("\n🎧 Step 1: Fetching songs from Spotify")
 subprocess.run(["python", "1_spotify.py"], check=True)

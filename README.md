@@ -1,13 +1,34 @@
-PYTHON tool to download your spotify playlist to mp3
+# 🎧 spotify2mp3 — v1.1 Update
 
-Requirements:
-		1. yt-dlp 
-		2. ffmpeg
-		3. spotify developer credentials
-How to run:
-		1. edit the python script 1_spotify.py
-		2. add CLIENT_ID CLIENT_SECRET PLAYLIST_ID 
-		3. edit 2_spotifytoyt.py and 3_downloadfromfile.py
-		4. add your path to yt-dlp in YTDLP_PATH
-		5. run the python scripts serially
-Notes: in the end you will get all logs and list of available songs not found songs failed songs in specific txt files you can check there.
+This version focuses on automation and usability improvements to the original flow.
+
+---
+
+## ✅ What's New in v1.1
+
+### 🔁 Automated Workflow
+
+- Introduced `run_all.py` to execute all 3 scripts in order:
+  1. Fetch songs from Spotify
+  2. Search them on YouTube
+  3. Download MP3s
+
+### 🔐 First-time Credential Prompt
+
+- Prompts user only once for:
+  - Spotify `CLIENT_ID`
+  - Spotify `CLIENT_SECRET`
+  - Spotify Playlist URL
+  - Full path to `yt-dlp.exe`
+- Saves them in `credentials.txt` for future runs.
+
+### 💾 Reusability
+
+- All future runs automatically read from `credentials.txt` without asking again.
+
+---
+
+## 🔧 Usage
+
+```bash
+python run_all.py

@@ -3,15 +3,32 @@ import re
 import subprocess
 import glob
 
-# Path to yt-dlp.exe
-YTDLP_PATH = r'# You must copy this from your path'
-
-# File paths
+# Files
+CREDENTIALS_FILE = "credentials.txt"
 INPUT_FILE = "available.txt"
 OUTPUT_DIR = os.path.join(os.getcwd(), "downloads")
 LOG_FILE = "logss.txt"
 FAILED_FILE = "failed.txt"
 
+# Load or prompt for yt-dlp path
+YTDLP_PATH = None
+if os.path.exists(CREDENTIALS_FILE):
+    with open(CREDENTIALS_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("YTDLP_PATH"):
+                YTDLP_PATH = line.split("=", 1)[1].strip()
+                break
+
+if not YTDLP_PATH or not os.path.exists(YTDLP_PATH):
+    YTDLP_PATH = input("Enter full path to yt-dlp.exe: ").strip().strip("'\"")
+    if not os.path.exists(YTDLP_PATH):
+        print("❌ Provided yt-dlp path does not exist. Exiting.")
+        exit(1)
+    with open(CREDENTIALS_FILE, "a", encoding="utf-8") as f:
+        f.write(f"YTDLP_PATH = {YTDLP_PATH}\n")
+    print("✅ Saved yt-dlp path to credentials.txt")
+
+# Ensure output folder exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Parse available.txt
@@ -30,11 +47,10 @@ with open(INPUT_FILE, "r", encoding="utf-8") as f:
         except ValueError:
             continue
 
+# Download loop
 failed = []
-
 with open(LOG_FILE, "w", encoding="utf-8") as logf:
     for idx, (title, url) in enumerate(songs, start=1):
-        # Skip already downloaded songs
         existing = glob.glob(os.path.join(OUTPUT_DIR, f"*{title[:80]}*.mp3"))
         if existing:
             print(f"[SKIPPED] Already downloaded: {title}")
@@ -89,11 +105,11 @@ with open(LOG_FILE, "w", encoding="utf-8") as logf:
             logf.write(f"[TIMEOUT] {title}\n")
             failed.append((title, url))
 
-# Save failed list
+# Save failed downloads
 if failed:
     with open(FAILED_FILE, "w", encoding="utf-8") as f:
         for title, url in failed:
             f.write(f"{title}\n{url}\n\n")
     print(f"\n[WARNING] {len(failed)} downloads failed. See '{FAILED_FILE}'.")
 
-print(f"\n[DONE] All downloads completed. Files saved to: {OUTPUT_DIR}")
+print(f"\n✅ All downloads completed. Files saved to: {OUTPUT_DIR}")

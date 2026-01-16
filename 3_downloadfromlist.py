@@ -1,10 +1,31 @@
+import sys
 import os
-import re
+import json
 import subprocess
 import glob
 
-# Path to yt-dlp.exe
-YTDLP_PATH = r'# You must copy this from your path'
+# Enable UTF-8 printing for emojis on Windows
+if os.name == 'nt':
+    sys.stdout.reconfigure(encoding='utf-8')
+
+CREDENTIALS_FILE = "credentials.txt"
+
+def load_ytdlp_path():
+    """Load yt-dlp path from credentials.txt (JSON format)."""
+    if os.path.exists(CREDENTIALS_FILE):
+        with open(CREDENTIALS_FILE, "r", encoding="utf-8") as f:
+            try:
+                creds = json.load(f)
+                return creds.get("YTDLP_PATH", "").strip()
+            except json.JSONDecodeError:
+                print("⚠️ Malformed credentials.txt")
+    return ""
+
+YTDLP_PATH = load_ytdlp_path()
+
+if not YTDLP_PATH or not os.path.exists(YTDLP_PATH):
+    print("❌ yt-dlp path not found or invalid in credentials.txt")
+    exit(1)
 
 # File paths
 INPUT_FILE = "available.txt"
@@ -34,13 +55,13 @@ failed = []
 
 with open(LOG_FILE, "w", encoding="utf-8") as logf:
     for idx, (title, url) in enumerate(songs, start=1):
-        # Skip already downloaded songs
+        # Skip already downloaded
         existing = glob.glob(os.path.join(OUTPUT_DIR, f"*{title[:80]}*.mp3"))
         if existing:
             print(f"[SKIPPED] Already downloaded: {title}")
             continue
 
-        print(f"\n[DOWNLOAD] ({idx}/{len(songs)}) {title}")
+        print(f"\n🎧 [DOWNLOAD] ({idx}/{len(songs)}) {title}")
         logf.write(f"\n--- Downloading: {title} ---\n")
 
         output_template = os.path.join(OUTPUT_DIR, f"%(title).100s.%(ext)s")
@@ -79,21 +100,21 @@ with open(LOG_FILE, "w", encoding="utf-8") as logf:
             downloaded = glob.glob(os.path.join(OUTPUT_DIR, f"*{title[:80]}*.mp3"))
 
             if process.returncode != 0 or not downloaded:
-                print(f"[FAILED] {title}")
+                print(f"❌ [FAILED] {title}")
                 logf.write(f"[FAILED] {title}\n")
                 for file in glob.glob(os.path.join(OUTPUT_DIR, f"*{title[:80]}*")):
                     os.remove(file)
                 failed.append((title, url))
         except subprocess.TimeoutExpired:
-            print(f"[TIMEOUT] {title}")
+            print(f"⏱️ [TIMEOUT] {title}")
             logf.write(f"[TIMEOUT] {title}\n")
             failed.append((title, url))
 
-# Save failed list
+# Save failed downloads
 if failed:
     with open(FAILED_FILE, "w", encoding="utf-8") as f:
         for title, url in failed:
             f.write(f"{title}\n{url}\n\n")
-    print(f"\n[WARNING] {len(failed)} downloads failed. See '{FAILED_FILE}'.")
+    print(f"\n⚠️ {len(failed)} downloads failed. See '{FAILED_FILE}'.")
 
-print(f"\n[DONE] All downloads completed. Files saved to: {OUTPUT_DIR}")
+print(f"\n✅ All downloads completed. Files saved to: {OUTPUT_DIR}")
